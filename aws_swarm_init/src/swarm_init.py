@@ -7,6 +7,7 @@ import docker
 import requests
 import random
 import os
+import json_logging, logging, sys
 from boto3.dynamodb.conditions import Key, Attr
 
 # Vars to push through
@@ -24,14 +25,23 @@ dyn_table = dynamodb.Table(dynamodb_table_name_expanded)
 docker_client = docker.DockerClient(base_url='unix://var/run/docker.sock')
 docker_api_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
+# Logging
+json_logging.ENABLE_JSON_LOGGING = True
+json_logging.COMPONENT_ID = "aws-swarm-manager"
+json_logging.COMPONENT_NAME = "aws-swarm-manager"
+json_logging.init()
+logger = logging.getLogger("aws-swarm-manager")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
 # Create a swarm
 def swarm_create_cluster():
-  
+
   docker_client.swarm.init(
       advertise_addr='eth0',
       force_new_cluster=False
   )
-  print "Swarm created"
+  logger.info("Swarm successfully created")
 
   # Locally store the tokens and write then to dyanmo
   service = docker_api_client.inspect_swarm()
@@ -46,7 +56,7 @@ def swarm_create_cluster():
 def swarm_join_cluster(swarm_active_master_ips, token):
 
   # Pass a list of masters and attempt to connect
-  print "Joining the existing cluster as a " + role
+  logger.info("Joining the existing cluster as a " + role)
   docker_client.swarm.join(
       remote_addrs=swarm_active_master_ips, 
       join_token=token,
@@ -60,9 +70,9 @@ def aws_check_swarm_dynamo():
   table_names = [table.name for table in dynamodb.tables.all()]
 
   if dynamodb_table_name_expanded in table_names:
-      print dynamodb_table_name_expanded + " Exists!"
+    logger.info("Connected to " + dynamodb_table_name_expanded)
   else:
-      print('Table is not ready, or not created')
+    logger.error("The table " + dynamodb_table_name_expanded + " is not ready or created yet")
 
 # Gather data from Dynamo
 def aws_swarm_precheck():
@@ -93,9 +103,10 @@ def aws_swarm_precheck():
 
   # Evaluate whether in the list of roles whether or not my name is registered
   if local_node_name in swarm_active_nodes:
-    print local_node_name + " I'm already registered as a " + role
+    logger.info( local_node_name + " is already registered")
+    #print local_node_name + " I'm already registered as a " + role
   else:
-    print "Not found, lets register"
+    logger.info( local_node_name + " is registering with the cluster")
     aws_swarm_registration(role)
 
 # Evaluate what to register as
@@ -105,11 +116,14 @@ def aws_swarm_registration(role):
   if swarm_query['Items'] == []:
     if role == 'master':
       print "Empty cluster found - creating a new swarm"
+      logger.info("No existing cluster detected, creating a new one")
       swarm_create_cluster()
     elif role == 'worker':
-      print "No swarm masters currently active - waiting for something to become active"
+      logger.info("No existing cluster detected, creating a new one")
+      time.sleep(3)
+      aws_swarm_precheck()
     else:
-      print "Invalid role specified - Please ensure you have set the role correctly"
+      logger.error("Invalid role specified. Please ensure you have set the role correctly. Exiting")
       quit()
 
   # Join a cluster as another master token
@@ -122,7 +136,7 @@ def aws_swarm_registration(role):
 
   # No correct role
   else:
-    print "Invalid role specified - Please ensure you have set the role correctly"
+    logger.error("Invalid role specified. Please ensure you have set the role correctly. Exiting")
     quit()
 
 # Work out locals
@@ -153,7 +167,7 @@ def aws_swarm_write_type():
         'worker_token': swarm_worker_token
           }
         )
-    print "Added " + local_address + " to DynamoDB"
+    logger.info("Successfully joined the swarm as " + local_address)
 
   else:
     dyn_table.put_item(
@@ -163,7 +177,7 @@ def aws_swarm_write_type():
       'node_name': local_node_name
         }
       )
-    print "Added " + local_address + " to DynamoDB"
+    logger.info("Successfully joined the swarm as " + local_address)
 
 def main():
   # Hacky sleep to avoid a rare race condition between multi masters
