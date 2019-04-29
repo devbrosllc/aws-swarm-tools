@@ -7,7 +7,11 @@ import docker
 import requests
 import random
 import os
+import logging
 from boto3.dynamodb.conditions import Key, Attr
+
+# Logging config
+logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%m:%d:%Y:%I:%M:%S', level=logging.INFO)
 
 # Vars to push through
 dynamo_table_suffix = os.environ['DYNAMO_TABLE']
@@ -31,7 +35,7 @@ def swarm_create_cluster():
       advertise_addr='eth0',
       force_new_cluster=False
   )
-  print "Swarm created"
+  logging.info('Swarm created')
 
   # Locally store the tokens and write then to dyanmo
   service = docker_api_client.inspect_swarm()
@@ -60,9 +64,9 @@ def aws_check_swarm_dynamo():
   table_names = [table.name for table in dynamodb.tables.all()]
 
   if dynamodb_table_name_expanded in table_names:
-      print dynamodb_table_name_expanded + " Exists!"
+      logging.info(dynamodb_table_name_expanded + ' Exists!')
   else:
-      print('Table is not ready, or not created')
+      logging.warning('Table is not ready, or not created')
 
 # Gather data from Dynamo
 def aws_swarm_precheck():
@@ -93,9 +97,9 @@ def aws_swarm_precheck():
 
   # Evaluate whether in the list of roles whether or not my name is registered
   if local_node_name in swarm_active_nodes:
-    print local_node_name + " I'm already registered as a " + role
+    logging.info(local_node_name + " -- I'm already registered as a " + role)
   else:
-    print "Not found, lets register"
+    logging.info(local_node_name + ' not found, registering...')
     aws_swarm_registration(role)
 
 # Evaluate what to register as
@@ -104,12 +108,12 @@ def aws_swarm_registration(role):
   # Create a cluster if its empty
   if swarm_query['Items'] == []:
     if role == 'master':
-      print "Empty cluster found - creating a new swarm"
+      logging.info('Empty cluster found - creating a new swarm')
       swarm_create_cluster()
     elif role == 'worker':
-      print "No swarm masters currently active - waiting for something to become active"
+      logging.info('No swarm masters currently active - waiting for something to become active')
     else:
-      print "Invalid role specified - Please ensure you have set the role correctly"
+      logging.critical('Invalid role specified - Please ensure you have set the role correctly')
       quit()
 
   # Join a cluster as another master token
@@ -122,7 +126,7 @@ def aws_swarm_registration(role):
 
   # No correct role
   else:
-    print "Invalid role specified - Please ensure you have set the role correctly"
+    logging.critical('Invalid role specified - Please ensure you have set the role correctly')
     quit()
 
 # Work out locals
@@ -153,7 +157,7 @@ def aws_swarm_write_type():
         'worker_token': swarm_worker_token
           }
         )
-    print "Added " + local_address + " to DynamoDB"
+    logging.info('Added ' + local_address + ' to DynamoDB')
 
   else:
     dyn_table.put_item(
@@ -163,7 +167,7 @@ def aws_swarm_write_type():
       'node_name': local_node_name
         }
       )
-    print "Added " + local_address + " to DynamoDB"
+    logging.info('Added ' + local_address + ' to DynamoDB')
 
 def main():
   # Hacky sleep to avoid a rare race condition between multi masters
