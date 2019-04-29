@@ -175,20 +175,3 @@ def main():
   aws_swarm_precheck()
 
 main()
-
-
-# whoami
-  # Master = 
-    # check for swarm, if there is one, join with master token, else
-      # create a new swarm
-        # publish master IP address
-        # publish master and worker tokens
-
-  # Worker =
-    # check for swarm, loop waiting for token
-      # join as worker with worker key
-    
-
-
-    #  430         salt_return = {}
-#   431         salt_return.update({'Error': 'Make sure all args are passed [availability, node_name, role, node_id, version]'})
