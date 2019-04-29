@@ -1,0 +1,17 @@
+version: '3'
+services:
+  nginx: 
+    image: nginx:latest
+    container_name: demo_nginx
+    ports:
+      - 80:80
+      - 443:443
+  builder:
+    build: .
+    container_name: docker_exposed
+    environment:
+    - AWS_ACCESS_KEY_ID=
+    - AWS_DEFAULT_REGION=
+    - AWS_SECRET_ACCESS_KEY=
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock

@@ -1,0 +1,6 @@
+{{ range $key, $value := .}}
+
+{{ if .Env.R53_DNS_NAME  }}
+{{ .Env.R53_DNS_NAME }}
+{{ end }}
+{{ end }}
