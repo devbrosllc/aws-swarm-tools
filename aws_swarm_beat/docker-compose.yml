@@ -4,8 +4,8 @@ services:
     build: .
     container_name: swarm_beat
     environment:
-    - AWS_ACCESS_KEY_ID=AKIAJJWHZS7B43D4VM7Q
-    - AWS_SECRET_ACCESS_KEY=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
+    - AWS_ACCESS_KEY_ID=
+    - AWS_SECRET_ACCESS_KEY=
     - AWS_DEFAULT_REGION=eu-west-1
     - ENV=dev
     - DYNAMO_TABLE=eu-west-1-swarm-management
