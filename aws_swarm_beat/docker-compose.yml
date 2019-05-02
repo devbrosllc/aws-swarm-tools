@@ -1,0 +1,16 @@
+version: '3'
+services:
+  swarm-manager:
+    build: .
+    container_name: swarm_beat
+    environment:
+    - AWS_ACCESS_KEY_ID=AKIAJJWHZS7B43D4VM7Q
+    - AWS_SECRET_ACCESS_KEY=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
+    - AWS_DEFAULT_REGION=eu-west-1
+    - ENV=dev
+    - DYNAMO_TABLE=eu-west-1-swarm-management
+    - PRUNE_AFTER_X_HOURS=0
+    - PRUNE_AFTER_X_MIN=3
+    - HEARTBEAT_INTERVAL=10
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
