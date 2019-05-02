@@ -24,6 +24,7 @@ Alternatively Docker can be used with compose
 ### AWS
 
 * EC2 with a instance role that has permission to read/write to the relevant DynamoDB
+* NOTE: If AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY are omit, Boto will default to checking for a IAM role: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 
 ### DynamoDB (Required)
 

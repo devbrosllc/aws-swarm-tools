@@ -5,4 +5,4 @@
   # Delete old records
     # Scan all TXT records, compare and remove
 * Create and manage its own ELB(?)
-* Stop stripping domain newline
+* Stop stripping domain newline 
